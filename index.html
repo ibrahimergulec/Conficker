@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ahmet Yılmaz - Dijital Kartvizit</title>
+    <!-- QRCode.js kütüphanesini dışarıdan çağırıyoruz -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            padding: 40px 24px;
+            box-sizing: border-box;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Profil Fotoğrafı - Üst Orta */
+        .profile-pic-container {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 20px auto;
+        }
+
+        .profile-pic {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
+        }
+
+        /* İsim ve Unvan */
+        h1 {
+            font-size: 24px;
+            color: var(--text-primary);
+            margin: 0 0 6px 0;
+            font-weight: 700;
+        }
+
+        .title {
+            font-size: 15px;
+            color: var(--accent-color);
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+
+        .company {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0 0 24px 0;
+        }
+
+        /* Heylink Tarzı Butonlar / Linkler */
+        .links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .link-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #f8fafc;
+            color: var(--text-primary);
+            padding: 14px 20px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .link-btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+        }
+
+        /* Ana Butonlar (İndir ve QR) */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .vcard-btn, .qr-toggle-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+
+        .vcard-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+        }
+
+        .vcard-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.45);
+        }
+
+        .qr-toggle-btn {
+            background: #ffffff;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+        }
+
+        .qr-toggle-btn:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+        }
+
+        /* QR Kod Açılır Pencere (Modal) Stilleri */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h3 {
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .modal-content p {
+            margin: 0 0 20px 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #qrcode img {
+            border-radius: 8px;
+            padding: 5px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .close-modal-btn {
+            background: #f1f5f9;
+            color: var(--text-primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .close-modal-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- PROFİL FOTOĞRAFI -->
+        <div class="profile-pic-container">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80" alt="Profil Fotoğrafı" class="profile-pic">
+        </div>
+
+        <!-- KİŞİ BİLGİLERİ -->
+        <h1>Ahmet Yılmaz</h1>
+        <p class="title">Kıdemli Yazılım Geliştirici</p>
+        <p class="company">Yazılım Ltd. Şti.</p>
+
+        <!-- HEYLINK TARZI SOSYAL / İLETİŞİM LİNKLERİ -->
+        <div class="links-list">
+            <a href="tel:+905551234567" class="link-btn">
+                📞 Telefonu Ara
+            </a>
+            <a href="mailto:ahmet@ornek.com" class="link-btn">
+                ✉️ E-posta Gönder
+            </a>
+            <a href="https://linkedin.com" target="_blank" class="link-btn">
+                💼 LinkedIn Profili
+            </a>
+            <a href="https://github.com" target="_blank" class="link-btn">
+                💻 GitHub / Web Sitesi
+            </a>
+        </div>
+
+        <!-- AKSİYON BUTONLARI -->
+        <div class="action-buttons">
+            <a href="#" id="downloadVcard" class="vcard-btn">
+                📇 Kişiyi Rehbere Kaydet
+            </a>
+            <button id="openQrModal" class="qr-toggle-btn">
+                📱 QR Kod ile Paylaş
+            </button>
+        </div>
+
+        <div class="footer">
+            Dijital Kartvizit Sistemi
+        </div>
+    </div>
+
+    <!-- QR KOD AÇILIR PENCERE (MODAL) -->
+    <div id="qrModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Kartviziti Taratın</h3>
+            <p>Telefonunuzun kamerasıyla tarayarak sayfaya ulaşabilirsiniz.</p>
+            <div id="qrcode"></div>
+            <button id="closeQrModal" class="close-modal-btn">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. vCard Dosyası İndirme Mantığı
+        document.getElementById('downloadVcard').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const vCardData = `BEGIN:VCARD
+VERSION:3.0
+FN:Ahmet Yılmaz
+N:Yılmaz;Ahmet;;;
+ORG:Yazılım Ltd. Şti.
+TITLE:Kıdemli Yazılım Geliştirici
+TEL;TYPE=CELL,VOICE:+905551234567
+EMAIL:ahmet@ornek.com
+URL:https://ornek.com
+END:VCARD`;
+
+            const blob = new Blob([vCardData], { type: 'text/vcard;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'ahmet-yilmaz.vcf');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // 2. QR Kod Modal ve Dinamik Üretim Mantığı
+        const modal = document.getElementById('qrModal');
+        const openBtn = document.getElementById('openQrModal');
+        const closeBtn = document.getElementById('closeQrModal');
+        let qrGenerated = false;
+
+        openBtn.addEventListener('click', function() {
+            modal.classList.add('active');
+            
+            // QR kodu sadece ilk açılışta bir kez oluşturuyoruz
+            if (!qrGenerated) {
+                new QRCode(document.getElementById("qrcode"), {
+                    text: window.location.href, // Sayfanın o anki güncel adresi
+                    width: 160,
+                    height: 160,
+                    colorDark: "#1e293b",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                qrGenerated = true;
+            }
+        });
+
+        closeBtn.addEventListener('click', function() {
+            modal.classList.remove('active');
+        });
+
+        // Modal dışına tıklandığında kapatma
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
